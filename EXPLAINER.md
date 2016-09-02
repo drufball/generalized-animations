@@ -22,7 +22,7 @@ Value inputs can be thought of as configuration or internal state for the animat
 ## Animation models
 Animation models control operation of the animation. An animation model defines what input slots are available, and converts inputs to a single *t value* which is fed into the output model.
 
-## Outputs 
+## Output models  
 Currently the only valid output for an animation is a sequence of keyframes. It is possible that we’ll allow registration of more generic effector functions to handle output in the future.
 
 # Potential API
