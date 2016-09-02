@@ -4,6 +4,8 @@ This proposal suggests that animations be decomposed into 3 parts:
 - __Inputs__ from the 'real world' or the web app that control the animation.
 - An __animation model__ that maps inputs onto a *t value* from 0 to 1.
 - An __output model__ that converts a *t value* into properties, which create the visual change of the animation.
+ 
+Initially, this conceptual deconstruction could be used to support adding scroll position as a potential timeline input (see below). Eventually, it could be used to support a range of animation types and models, including several physical models like springs.
 
 ## Input types
 Inputs can take many forms including clock time, scroll position, or physical parameters. Generally, inputs can be separated into various classes:
@@ -23,7 +25,7 @@ Animation models control operation of the animation. An animation model defines 
 ## Outputs 
 Currently the only valid output for an animation is a sequence of keyframes. It is possible that we’ll allow registration of more generic effector functions to handle output in the future.
 
-# API
+# Potential API
 
 ## Imperative
 __Inputs__  
@@ -77,46 +79,47 @@ a.registerTrigger(“play”, triggerFromScrollRegion(el,
     CSSLengthValue.from(“50%”)));
 ```
 
-__Timeline animations__  
-Timeline animations are driven by a single timeline input. The `play()` trigger starts an animation playing. The animation model scales the input value to a *t* of 0 at the beginning of the animation and 1 at the end. Animation duration is extracted from the output model.
+## Declarative
+We need to expose:
+- `ScrollTimelineAdapter`
+- Triggers & Trigger registration
+- New AnimationEffect subclasses
 
-A `startTime` passive value input registers the start of the animation into the timeline. Animation playback position is provided by the `currentTime` active value input. This can be set to seek the animation.
+Dean’s proposal was for
+- `animation-timebase`
+- `animation-trigger`
+- `animation-behavior`
 
-Timeline animation behavior is quite complex, for example:
-- Output model duration is scaled by a playback rate
-- Timeline animation models define an ‘active region’ that maps to the duration of the output model. Triggering `play()` when a timeline animation model’s `currentTime` is outside the active region causes the animation to start from the beginning; otherwise the `currentTime` doesn’t change
-- Timeline animations can be paused - the `currentTime` (and output *t value*) is fixed while an animation is paused.
+This actually maps pretty nicely, though `animation-behavior` in Dean’s proposal is the composite operation. Here’s a slightly modified version of Dean’s proposal which leaves out animation-behavior and adds animation-effect:
 
-Timeline animation models can be used for scroll-linked animations by using the scroll region as a timeline.
+```
+Name: animation-timebase
+Value: auto | scroll([<length-percentage> [<length-percentage>]?]?) | url(<media element>)
+Initial: auto
+Inherited: no
+Animatable: no
+```
 
-Timeline animation models can be used for scroll-triggered animations, by registering an appropriate trigger on the `play()` slot. If the animation should be retriggered every time the trigger point is passed, this can be achieved by registering the trigger point to both the `cancel()` and `play()` triggers, in that order.
+The two optional paramaters in scroll represent zeroPoint and onePoint respectively. By default they are 0% and 100% - i.e. the scroll region is covered by an animation of 1 second duration.
 
-__Physics animation models__  
-Physics animations models provide more complex reactions to triggers.  Rather than being driven by a timeline, physics animation models are driven by state perturbations. For example, a spring animation model will animate its *t value* towards a target value, modeled by a force proportional to the distance from the target.
+Note that selecting ‘scroll’ causes the immediate containing block to be the container that the animation animates based off. There’s no declarative way to alter this.
 
-There is an important caveat to physics animations: they operate in *t space*, not in the output space. This means that non-linear mappings in the output model (e.g. via the use of keyframes or timing functions) will produce unexpected results. It also means that developers need to be mindful of the mapping between *t space* and the output space to produce sensible effects.
+```
+Name: animation-trigger
+Value: none | [scroll(<trigger> <snap point>) ]*
+Initial: none
+Inherited: no
+Animatable: no
+```
 
-*Examples*  
-The spring animation model exposes the following value slots:
-- target *t* value (passive)
-- current *t* value (active)
-- springiness value (stiffness / mass) (passive)
-- damping value (friction) (passive)
-- duration value (passive)
-- *dt* value (active)
+We need to bikeshed this heavily against the current scroll snap specification, but the basic point (as described by Dean) is that we’re re-using scroll snap’s element reference semantics to refer to points in the scroller.
 
-Setting springiness, velocity or damping values will cause the duration to update, while setting the duration will adjust the damping value. The model provides two triggers: play() and cancel().
+```
+Name: animation-effect
+Value: none | spring(<number> <number> <number>) | linear-a-seek(<number> <number>)
+Initial: none
+Inherited: no
+Animatable: no
+```
 
-The linear acceleration seeking model exposes the following value slots:
-- target *t* value (passive)
-- current *t* value (active)
-- duration value (passive)
-- target *dt* value (passive)
-- current *dt* value (active)
-- acceleration value (active)
-
-For a given target *t*, *dt*, and duration, the model will adjust the acceleration in a piecewise linear fashion to bring the current *t* value in line with the target *t* value, with a rate of change specified by the target *dt*.
-
-There may be multiple solutions, or alternatively zero solutions to the seek. If there are zero solutions then the animation cancels itself (reporting via a cancelled promise that this occurred). If there are multiple solutions then the least energetic (lowest area under the acceleration curve) solution is selected.
-
-The collection of physics animation models will grow over time.
+This will also need heavy bikeshedding, but each choice opts the animation in for an alternative effect . We may want this to be list-valued but I’m not sure that makes sense.
