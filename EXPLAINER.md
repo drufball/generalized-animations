@@ -11,6 +11,11 @@ Inputs can take many forms including clock time, scroll position, or physical pa
 __Timelines__  
 Timelines are essentially continuous ranges. Timelines can be *unbounded* (span to infinity in both directions) or *bounded*. The system clock is an example of an unbounded timeline, while scroll position is bounded.
 
+If the timeline is derived from scroll position, it's acceptable for the timeline to be asynchonous with respect to 
+scroll handling - that is, depending on implementation, animations tied to scrolling may lag slightly behind the
+actual scroll actions. This is similar to the compositor/main thread split that some browsers exhibit (e.g. the
+difference between transform and left property animation).`
+
 __Triggers__  
 Triggers represent instantaneous changes in state for the animation. Triggers are signals like `play()` or `pause()` from the current web animations API, but they can also be derived from a timeline. For example, an animation could be set to trigger once scroll position has passed a certain point.
 
