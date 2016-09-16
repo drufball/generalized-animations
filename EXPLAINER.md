@@ -1,12 +1,10 @@
 # Conceptual structure
-This proposal suggests that animations be decomposed into 3 parts:
+Animations can be decomposed into 3 conceptual parts:
 
 - __Inputs__ from the 'real world' or the web app that control the animation.
 - An __animation model__ that maps inputs onto a *t value* from 0 to 1.
 - An __output model__ that converts a *t value* into properties, which create the visual change of the animation.
  
-Initially, this conceptual deconstruction could be used to support adding scroll position as a potential timeline input (see below). Eventually, it could be used to support a range of [animation types and models](/animation-models.md), including several physical models like springs.
-
 ## Input types
 Inputs can take many forms including clock time, scroll position, or physical parameters. Generally, inputs can be separated into various classes:
 
@@ -25,7 +23,7 @@ Animation models control operation of the animation. An animation model defines 
 ## Output models  
 Currently the only valid output for an animation is a sequence of keyframes. It is possible that we’ll allow registration of more generic effector functions to handle output in the future.
 
-# Potential API
+# API
 
 ## Imperative
 __Inputs__  
